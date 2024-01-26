@@ -6,6 +6,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -31,7 +33,7 @@ class NoteController extends AbstractController
     }
 
     #[Route("/notes", "create_note", methods: ["POST"])]
-    public function createNote(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function createNote(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
     {
         $requestBody = json_decode($request->getContent(), true);
 
@@ -39,9 +41,16 @@ class NoteController extends AbstractController
 
         $note->setContent($requestBody["content"]);
 
+        $errors = $validator->validate($note);
+
+        if (count($errors) > 0) {
+            throw new BadRequestHttpException((string) $errors);
+        }
+
         $entityManager->persist($note);
         $entityManager->flush();
 
         return $this->json($note, status: Response::HTTP_CREATED);
     }
+
 }
