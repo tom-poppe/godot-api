@@ -4,8 +4,10 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Doctrine\ORM\EntityManagerInterface;
 
 use App\Entity\Note;
 
@@ -29,7 +31,7 @@ class NoteController extends AbstractController
     }
 
     #[Route("/notes", "create_note", methods: ["POST"])]
-    public function createNote(Request $request, NoteRepository $noteRepository): JsonResponse
+    public function createNote(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         $requestBody = json_decode($request->getContent(), true);
 
@@ -37,7 +39,8 @@ class NoteController extends AbstractController
 
         $note->setContent($requestBody["content"]);
 
-        $noteRepository->save($note, true);
+        $entityManager->persist($note);
+        $entityManager->flush();
 
         return $this->json($note, status: Response::HTTP_CREATED);
     }
