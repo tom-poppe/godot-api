@@ -12,8 +12,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 
 use App\Entity\Note;
-
 use App\Repository\NoteRepository;
+use App\OptionsResolver\NoteOptionsResolver;
 
 #[Route("/api", "api_")]
 class NoteController extends AbstractController
@@ -33,24 +33,44 @@ class NoteController extends AbstractController
     }
 
     #[Route("/notes", "create_note", methods: ["POST"])]
-    public function createNote(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
+    public function createNote(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, NoteOptionsResolver $noteOptionsResolver): JsonResponse
     {
-        $requestBody = json_decode($request->getContent(), true);
+        try {
+            $requestBody = json_decode($request->getContent(), true);
 
-        $note = new Note();
+            $fields = $noteOptionsResolver->configureContent(false)->resolve($requestBody);
 
-        $note->setContent($requestBody["content"]);
+            $note = new Note();
+            $note->setContent($fields["content"]);
 
-        $errors = $validator->validate($note);
+            $errors = $validator->validate($note);
 
-        if (count($errors) > 0) {
-            throw new BadRequestHttpException((string) $errors);
+            if (count($errors) > 0) {
+                throw new InvalidArgumentException((string) $errors);
+            }
+
+            $entityManager->persist($note);
+            $entityManager->flush();
+
+            return $this->json($note, status: Response::HTTP_CREATED);
+        } catch(Exception $e) {
+            throw new BadRequestHttpException($e->getMessage());
         }
-
-        $entityManager->persist($note);
-        $entityManager->flush();
-
-        return $this->json($note, status: Response::HTTP_CREATED);
     }
 
+    #[Route("/notes/{id}", "delete_note", methods: ["DELETE"])]
+    public function deleteNote(Note $note, EntityManagerInterface $entityManager)
+    {
+        $note->setDeletedAt(new \DateTimeImmutable("now"));
+        
+        $entityManager->flush();
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+
+    #[Route("/notes/{id}", "update_note", methods: ["PATCH", "PUT"])]
+    public function updateNote(Note $note, EntityManagerInterface $entityManager, ValidatorInterface $validator)
+    {
+    }
 }
