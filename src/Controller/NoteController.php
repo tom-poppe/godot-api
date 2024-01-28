@@ -38,7 +38,7 @@ class NoteController extends AbstractController
         try {
             $requestBody = json_decode($request->getContent(), true);
 
-            $fields = $noteOptionsResolver->configureContent(false)->resolve($requestBody);
+            $fields = $noteOptionsResolver->configureContent(true)->resolve($requestBody);
 
             $note = new Note();
             $note->setContent($fields["content"]);
@@ -70,7 +70,35 @@ class NoteController extends AbstractController
 
 
     #[Route("/notes/{id}", "update_note", methods: ["PATCH", "PUT"])]
-    public function updateNote(Note $note, EntityManagerInterface $entityManager, ValidatorInterface $validator)
+    public function updateNote(Note $note, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, NoteOptionsResolver $noteOptionsResolver)
     {
+        try {
+            $isPatchMethod = $request->getMethod() === "PUT";
+            $requestBody = json_decode($request->getContent(), true);
+    
+            $fields = $noteOptionsResolver
+                ->configureContent($isPatchMethod)
+                ->resolve($requestBody);
+    
+            foreach($fields as $field => $value) {
+                switch($field) {
+                    case "content":
+                        $note->setContent($value);
+                        break;
+                }
+            }
+    
+            $errors = $validator->validate($note);
+
+            if (count($errors) > 0) {
+                throw new InvalidArgumentException((string) $errors);
+            }
+    
+            $entityManager->flush();
+    
+            return $this->json($note);
+        } catch(Exception $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
     }
 }
