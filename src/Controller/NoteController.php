@@ -15,16 +15,25 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Note;
 use App\Repository\NoteRepository;
 use App\OptionsResolver\NoteOptionsResolver;
+use App\OptionsResolver\PaginatorOptionsResolver;
 
 #[Route("/api", "api_", format: "json")]
 class NoteController extends AbstractController
 {
     #[Route('/notes', name: 'notes', methods: ["GET"])]
-    public function index(NoteRepository $noteRepository): JsonResponse
+    public function index(NoteRepository $noteRepository, Request $request, PaginatorOptionsResolver $paginatorOptionsResolver): JsonResponse
     {
-        $notes = $noteRepository->findAll();
-
-        return $this->json($notes);
+        try {
+            $queryParams = $paginatorOptionsResolver
+                ->configurePage()
+                ->resolve($request->query->all());
+    
+            $notes = $noteRepository->findAllWithPagination($queryParams["page"]);
+    
+            return $this->json($notes);
+        } catch(Exception $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
     }
 
     #[Route("/notes/{id}", "get_note", methods: ["GET"])]

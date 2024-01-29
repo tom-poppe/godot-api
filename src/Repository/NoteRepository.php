@@ -6,6 +6,8 @@ use App\Entity\Note;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+use App\Model\Paginator;
+
 /**
  * @extends ServiceEntityRepository<Note>
  *
@@ -19,6 +21,13 @@ class NoteRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Note::class);
+    }
+
+    public function findAllWithPagination(int $page): Paginator
+    {
+        $query = $this->createQueryBuilder('n')->orderBy('n.createdAt', 'DESC');
+
+        return new Paginator($query, $page);
     }
 
 //    /**
