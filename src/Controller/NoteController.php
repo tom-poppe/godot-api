@@ -9,13 +9,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Annotation\Route;
+
 use Doctrine\ORM\EntityManagerInterface;
 
 use App\Entity\Note;
 use App\Repository\NoteRepository;
 use App\OptionsResolver\NoteOptionsResolver;
 
-#[Route("/api", "api_")]
+#[Route("/api", "api_", format: "json")]
 class NoteController extends AbstractController
 {
     #[Route('/notes', name: 'notes', methods: ["GET"])]
