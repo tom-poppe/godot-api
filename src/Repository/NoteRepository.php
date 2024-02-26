@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Note;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -23,9 +24,12 @@ class NoteRepository extends ServiceEntityRepository
         parent::__construct($registry, Note::class);
     }
 
-    public function findAllWithPagination(int $page): Paginator
+    public function findAllWithPagination(int $page, User $user): Paginator
     {
-        $query = $this->createQueryBuilder('n')->orderBy('n.createdAt', 'DESC');
+        $query = $this->createQueryBuilder('n')
+            ->where('n.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('n.createdAt', 'DESC');
 
         return new Paginator($query, $page);
     }

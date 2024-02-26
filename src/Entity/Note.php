@@ -6,6 +6,7 @@ use App\Repository\NoteRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[ORM\Entity(repositoryClass: NoteRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -28,6 +29,11 @@ class Note
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Assert\Length(max: 65535)]
     private ?string $content = null;
+
+    #[ORM\ManyToOne(inversedBy: 'notes')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Ignore]
+    private ?User $user = null;
 
     public function getId(): ?int
     {
@@ -81,6 +87,18 @@ class Note
     public function setContent(?string $content): static
     {
         $this->content = $content;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,6 +19,7 @@ use App\OptionsResolver\NoteOptionsResolver;
 use App\OptionsResolver\PaginatorOptionsResolver;
 
 #[Route("/api", "api_", format: "json")]
+#[IsGranted("IS_AUTHENTICATED")]
 class NoteController extends AbstractController
 {
     #[Route('/notes', name: 'notes', methods: ["GET"])]
@@ -28,7 +30,7 @@ class NoteController extends AbstractController
                 ->configurePage()
                 ->resolve($request->query->all());
     
-            $notes = $noteRepository->findAllWithPagination($queryParams["page"]);
+            $notes = $noteRepository->findAllWithPagination($queryParams["page"], $this->getUser());
     
             return $this->json($notes);
         } catch(Exception $e) {
@@ -37,6 +39,7 @@ class NoteController extends AbstractController
     }
 
     #[Route("/notes/{id}", "get_note", methods: ["GET"])]
+    #[IsGranted("access", "note")]
     public function getNote(Note $note): JsonResponse
     {
         return $this->json($note);
@@ -52,6 +55,7 @@ class NoteController extends AbstractController
 
             $note = new Note();
             $note->setContent($fields["content"]);
+            $note->setUser($this->getUser());
 
             $errors = $validator->validate($note);
 
@@ -69,6 +73,7 @@ class NoteController extends AbstractController
     }
 
     #[Route("/notes/{id}", "delete_note", methods: ["DELETE"])]
+    #[IsGranted("access", "note")]
     public function deleteNote(Note $note, EntityManagerInterface $entityManager)
     {
         $note->setDeletedAt(new \DateTimeImmutable("now"));
@@ -80,6 +85,7 @@ class NoteController extends AbstractController
 
 
     #[Route("/notes/{id}", "update_note", methods: ["PATCH", "PUT"])]
+    #[IsGranted("access", "note")]
     public function updateNote(Note $note, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, NoteOptionsResolver $noteOptionsResolver)
     {
         try {
